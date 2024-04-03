@@ -1,17 +1,22 @@
 package Items;
 
-import Supplier.SupplierList;
+import Supplier.TableActionCellEditor;
+import Supplier.TableActionCellRender;
+import Supplier.TableActionEvent;
 import com.mysql.cj.jdbc.Blob;
 import databaseconnection.DataBaseConnection;
 import java.awt.Color;
+import java.awt.Image;
 import javax.swing.table.DefaultTableModel;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.util.Vector;
 import java.sql.PreparedStatement;
+import java.text.SimpleDateFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.ImageIcon;
+import javax.swing.JOptionPane;
 import javax.swing.RowFilter;
 import javax.swing.Timer;
 import javax.swing.table.TableRowSorter;
@@ -22,24 +27,32 @@ public class Items extends javax.swing.JPanel {
     private DefaultTableModel tableModel;
     private AddItem addItem;
     private Timer timer;
-    private testItem tItem;
+    private UpdateItem update;
 
     public Items() throws Exception {
         initComponents();
-          tItem = new testItem();
         populateTable();
         
-      
-//        timer = new Timer(1000, (e) -> {
-//            try {
-//                populateTable();
-//            } catch (Exception ex) {
-//                Logger.getLogger(SupplierList.class.getName()).log(Level.SEVERE, null, ex);
-//            }
-//
-//        });
-//        timer.start();
+         TableActionEvent event = new TableActionEvent() {
+            @Override
+            public void onDelete(int row) {
+                delete(row);
+            }
+        };
+        itemTable.getColumnModel().getColumn(9).setCellRenderer(new TableActionCellRender());
+        itemTable.getColumnModel().getColumn(9).setCellEditor(new TableActionCellEditor(event));
+        update = new UpdateItem();
+        timer = new Timer(1000, (e) -> {
+            try {
+                populateTable();
+            } catch (Exception ex) {
+                Logger.getLogger(Items.class.getName()).log(Level.SEVERE, null, ex);
+            }
+
+        });
+        timer.start();
         addItem = new AddItem(this);
+
     }
 
     private PreparedStatement p;
@@ -63,11 +76,10 @@ public class Items extends javax.swing.JPanel {
                 for (int i = 0; i <= c; i++) {
                     Blob blob = (Blob) rs.getBlob("Image");
                     itemTable.getColumnModel().getColumn(0).setCellRenderer(new ImageRenderer());
-                    ImageIcon imageicon = ImageRenderer.blobToImageIcon(blob, 50, 50);
+                    ImageIcon imageicon = ImageRenderer.blobToImageIcon(blob, 100, 100);
                     v.add(imageicon);
                     v.add(rs.getString("supplier"));
                     v.add(rs.getString("productname"));
-                    v.add(rs.getString("productId"));
                     v.add(rs.getString("category"));
                     v.add(rs.getString("quantity"));
                     v.add(rs.getString("cost"));
@@ -77,6 +89,7 @@ public class Items extends javax.swing.JPanel {
                 }
                 model.addRow(v);
             }
+
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -84,6 +97,33 @@ public class Items extends javax.swing.JPanel {
                 p.close();
             }
         }
+    }
+    
+     public void delete(int row) {
+        int dialogResult = JOptionPane.showConfirmDialog(null, "Do you want to delete the record?", "Warning", JOptionPane.YES_NO_OPTION);
+
+        if (dialogResult == JOptionPane.YES_OPTION) {
+            try {
+                DataBaseConnection.getInstance().ConnectToDatabase();
+                DefaultTableModel model = (DefaultTableModel) itemTable.getModel();
+                String productname = model.getValueAt(row, 2).toString(); // Assuming name is in the first column (index 0)
+
+                String sql = "DELETE FROM additems WHERE productname = ?";
+                PreparedStatement p = DataBaseConnection.getInstance().getConnection().prepareStatement(sql);
+                p.setString(1, productname); // Set the parameter value
+                int rowsDeleted = p.executeUpdate();
+
+                if (rowsDeleted > 0) {
+                    JOptionPane.showMessageDialog(null, "Successfully Deleted");
+                    model.removeRow(row); // Remove the row from the table view
+                } else {
+                    JOptionPane.showMessageDialog(null, "Record not found", "ERROR", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(null, ex.getMessage(), "ERROR", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+
     }
 
     @SuppressWarnings("unchecked")
@@ -94,26 +134,39 @@ public class Items extends javax.swing.JPanel {
         itemTable = new javax.swing.JTable();
         txtfield = new javax.swing.JTextField();
         jButton1 = new javax.swing.JButton();
-        jComboBox1 = new javax.swing.JComboBox<>();
+
+        setBackground(new java.awt.Color(255, 255, 255));
 
         itemTable.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
 
             },
             new String [] {
-                "Product", "Supplier", "Product Name", "Product ID", "Category", "Quantity", "Cost", "Price", "Status", "Date Modifiied"
+                "Product", "Supplier", "Product Name", "Category", "Quantity", "Cost", "Price", "Status", "Date Modifiied", ""
             }
         ) {
             boolean[] canEdit = new boolean [] {
-                false, false, true, false, false, false, false, false, false, false
+                false, false, false, false, false, false, false, false, false, true
             };
 
             public boolean isCellEditable(int rowIndex, int columnIndex) {
                 return canEdit [columnIndex];
             }
         });
+        itemTable.setRowHeight(40);
+        itemTable.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                itemTableMouseClicked(evt);
+            }
+        });
         jScrollPane1.setViewportView(itemTable);
+        if (itemTable.getColumnModel().getColumnCount() > 0) {
+            itemTable.getColumnModel().getColumn(9).setMinWidth(50);
+            itemTable.getColumnModel().getColumn(9).setPreferredWidth(50);
+            itemTable.getColumnModel().getColumn(9).setMaxWidth(50);
+        }
 
+        txtfield.setText("Search here");
         txtfield.addFocusListener(new java.awt.event.FocusAdapter() {
             public void focusGained(java.awt.event.FocusEvent evt) {
                 txtfieldFocusGained(evt);
@@ -135,8 +188,6 @@ public class Items extends javax.swing.JPanel {
             }
         });
 
-        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
-
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);
         layout.setHorizontalGroup(
@@ -149,9 +200,7 @@ public class Items extends javax.swing.JPanel {
                         .addComponent(txtfield, javax.swing.GroupLayout.PREFERRED_SIZE, 490, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jButton1)
-                        .addGap(89, 89, 89)
-                        .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 251, Short.MAX_VALUE)))
+                        .addGap(0, 412, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -160,11 +209,10 @@ public class Items extends javax.swing.JPanel {
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(txtfield, javax.swing.GroupLayout.PREFERRED_SIZE, 28, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jButton1)
-                    .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jButton1))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 451, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(14, Short.MAX_VALUE))
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 459, Short.MAX_VALUE)
+                .addContainerGap())
         );
     }// </editor-fold>//GEN-END:initComponents
 
@@ -191,15 +239,45 @@ public class Items extends javax.swing.JPanel {
     }//GEN-LAST:event_txtfieldFocusLost
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        GlassPanePopup.showPopup(tItem);
+        GlassPanePopup.showPopup(addItem);
     }//GEN-LAST:event_jButton1ActionPerformed
+
+    private void itemTableMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_itemTableMouseClicked
+        DefaultTableModel model = (DefaultTableModel) itemTable.getModel();
+        int SelectedRows = itemTable.getSelectedRow();
+
+        ImageIcon image = (ImageIcon) itemTable.getValueAt(SelectedRows, 0);
+        Image pic = image.getImage().getScaledInstance(100, 100, Image.SCALE_SMOOTH);
+        ImageIcon img = new ImageIcon(pic);
+        update.imageLbl.setIcon(img);
+
+        update.suppFld.setText(itemTable.getValueAt(SelectedRows, 1).toString());
+        update.proName.setText(itemTable.getValueAt(SelectedRows, 2).toString());
+        update.catBox.setSelectedItem(itemTable.getValueAt(SelectedRows, 3).toString());
+        update.quanFld.setText(itemTable.getValueAt(SelectedRows, 4).toString());
+        update.costFld.setText(itemTable.getValueAt(SelectedRows, 5).toString());
+        update.priceFld.setText(itemTable.getValueAt(SelectedRows, 6).toString());
+        update.statusFld.setText(itemTable.getValueAt(SelectedRows, 7).toString());
+
+        try {
+            String dateString = itemTable.getValueAt(SelectedRows, 8).toString();
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd"); // Modify the format as per your date string
+            java.util.Date date = dateFormat.parse(dateString);
+            update.dateChooser.setDate(date);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        GlassPanePopup.showPopup(update);
+
+    }//GEN-LAST:event_itemTableMouseClicked
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JTable itemTable;
     private javax.swing.JButton jButton1;
-    private javax.swing.JComboBox<String> jComboBox1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTextField txtfield;
     // End of variables declaration//GEN-END:variables
+
 }

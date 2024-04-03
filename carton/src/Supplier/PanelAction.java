@@ -36,7 +36,7 @@ public class PanelAction extends javax.swing.JPanel {
 
         remove = new Supplier.Button();
 
-        remove.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Supplier/icons8_trash_can_30px.png"))); // NOI18N
+        remove.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Supplier/icons8_trash_32px.png"))); // NOI18N
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
         this.setLayout(layout);

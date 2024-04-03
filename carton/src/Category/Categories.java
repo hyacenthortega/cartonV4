@@ -1,7 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JPanel.java to edit this template
- */
 package Category;
 
 import Controller.RemoveCategories;
@@ -18,7 +14,6 @@ import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.PreparedStatement;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -26,6 +21,7 @@ import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -35,24 +31,20 @@ import javax.swing.Timer;
 import model.CategoryModel;
 import raven.glasspanepopup.GlassPanePopup;
 
-/**
- *
- * @author home
- */
 public class Categories extends javax.swing.JPanel {
 
-   private AddCategory addCat;
+    private AddCategory addCat;
     private Timer timer;
-  
+
     public Categories() {
         initComponents();
         setOpaque(false);
         addCat = new AddCategory();
-        
+
         imagePanel.setLayout(new BoxLayout(imagePanel, BoxLayout.Y_AXIS));
         imagePanel.setLayout(new GridLayout(0, 6));
         jScrollPane1.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-   
+
         timer = new Timer(1000, (e) -> {
             try {
                 populateImagePanel();
@@ -69,21 +61,16 @@ public class Categories extends javax.swing.JPanel {
     private void populateImagePanel() throws Exception {
         try {
             DataBaseConnection.getInstance().ConnectToDatabase();
-
             String sql = "SELECT * FROM addcategory";
             PreparedStatement p = DataBaseConnection.getInstance().getConnection().prepareStatement(sql);
-
             ResultSet rs = p.executeQuery();
 
             imagePanel.removeAll();
             imagePanel.revalidate();
             imagePanel.repaint();
-
-            // Set the background color of the panel
             imagePanel.setBackground(Color.WHITE);
 
-            // Create a JPanel with GridLayout for images and labels
-            JPanel panel = new JPanel(new GridLayout(0, 6, 10, 10)); // 5 columns, spacing of 10 pixels
+            JPanel panel = new JPanel(new GridLayout(0, 6, 10, 10)); 
             panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
             while (rs.next()) {
@@ -101,26 +88,17 @@ public class Categories extends javax.swing.JPanel {
                     ImageIcon scaledIcon = new ImageIcon(scaledImage);
                     JLabel imageLabel = new JLabel(scaledIcon);
                     JLabel categoryName = new JLabel(rs.getString("categoryname"));
-
-                    // Set alignment of the category name label
                     categoryName.setHorizontalAlignment(SwingConstants.CENTER);
-
-                    // Create a JPanel to hold each image and its label
                     JPanel imagePanelWithLabel = new JPanel(new BorderLayout());
                     imagePanelWithLabel.add(imageLabel, BorderLayout.CENTER);
                     imagePanelWithLabel.add(categoryName, BorderLayout.SOUTH);
-
-                    // Add the image and label panel to the main panel
                     panel.add(imagePanelWithLabel);
                 }
-
                 bis.close();
             }
-
             imagePanel.add(panel);
             imagePanel.revalidate();
             imagePanel.repaint();
-
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
@@ -129,6 +107,8 @@ public class Categories extends javax.swing.JPanel {
             }
         }
     }
+    
+    
 
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
@@ -139,6 +119,10 @@ public class Categories extends javax.swing.JPanel {
         jLabel1 = new javax.swing.JLabel();
         remove = new javax.swing.JButton();
         add = new javax.swing.JButton();
+
+        setBackground(new java.awt.Color(255, 255, 255));
+
+        imagePanel.setBackground(new java.awt.Color(255, 255, 255));
 
         javax.swing.GroupLayout imagePanelLayout = new javax.swing.GroupLayout(imagePanel);
         imagePanel.setLayout(imagePanelLayout);
@@ -183,9 +167,9 @@ public class Categories extends javax.swing.JPanel {
                         .addGap(432, 432, 432)
                         .addComponent(jLabel1)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(add)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(remove)))
+                        .addComponent(add, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(remove, javax.swing.GroupLayout.PREFERRED_SIZE, 95, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -207,12 +191,12 @@ public class Categories extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     private void removeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_removeActionPerformed
-        Component[] components = imagePanel.getComponents();
+        try {
+              Component[] components = imagePanel.getComponents();
         for (Component component : components) {
             if (component instanceof JPanel) {
                 JPanel panel = (JPanel) component;
 
-                // Assuming the category name label is at index 1 in imagePanelWithLabel
                 Component[] panelComponents = panel.getComponents();
                 if (panelComponents.length > 1 && panelComponents[1] instanceof JLabel) {
                     JLabel categoryLabel = (JLabel) panelComponents[1];
@@ -225,7 +209,7 @@ public class Categories extends javax.swing.JPanel {
                             int option = JOptionPane.showConfirmDialog(null, "Are you sure you want to remove this category?",
                                     "Confirm", JOptionPane.YES_NO_OPTION);
                             if (option == JOptionPane.YES_OPTION) {
-                                // Remove the panel from the imagePanel
+                                
                                 imagePanel.remove(panel);
                                 imagePanel.revalidate();
                                 imagePanel.repaint();
@@ -237,11 +221,13 @@ public class Categories extends javax.swing.JPanel {
                     });
                 }
             }
+        }          
+        } catch (Exception e) {
         }
     }//GEN-LAST:event_removeActionPerformed
 
     private void addActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addActionPerformed
-       GlassPanePopup.showPopup(addCat);
+        GlassPanePopup.showPopup(addCat);
     }//GEN-LAST:event_addActionPerformed
 
 

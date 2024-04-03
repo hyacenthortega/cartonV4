@@ -29,7 +29,7 @@
     <Component class="Supplier.Button" name="remove">
       <Properties>
         <Property name="icon" type="javax.swing.Icon" editor="org.netbeans.modules.form.editors2.IconEditor">
-          <Image iconType="3" name="/Supplier/icons8_trash_can_30px.png"/>
+          <Image iconType="3" name="/Supplier/icons8_trash_32px.png"/>
         </Property>
       </Properties>
     </Component>
